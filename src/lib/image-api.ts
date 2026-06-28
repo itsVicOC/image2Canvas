@@ -3,7 +3,7 @@ import { validateImage2Size } from "./size-validation";
 export const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_MODEL = "gpt-image-2";
 
-export const SIZE_PRESETS = ["auto", "1024x1024", "1024x1536", "1536x1024", "custom"] as const;
+export const SIZE_PRESETS = ["1k", "2k", "4k", "custom"] as const;
 export const QUALITY_OPTIONS = ["auto", "low", "medium", "high"] as const;
 export const OUTPUT_FORMATS = ["png", "jpeg", "webp"] as const;
 export const BACKGROUND_OPTIONS = ["auto", "opaque", "transparent"] as const;
@@ -14,6 +14,31 @@ export type Quality = (typeof QUALITY_OPTIONS)[number];
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 export type Background = (typeof BACKGROUND_OPTIONS)[number];
 export type Moderation = (typeof MODERATION_OPTIONS)[number];
+
+export const SIZE_PRESET_DETAILS = {
+  "1k": { label: "1K", badge: "1K · 1024x1024", size: "1024x1024" },
+  "2k": { label: "2K", badge: "2K · 2048x2048", size: "2048x2048" },
+  "4k": { label: "4K", badge: "4K · 3840x2160", size: "3840x2160" },
+  custom: { label: "自定义", badge: "自定义", size: null },
+} satisfies Record<SizePreset, { label: string; badge: string; size: string | null }>;
+
+export const QUALITY_LABELS = {
+  auto: "自动",
+  low: "低",
+  medium: "中",
+  high: "高",
+} satisfies Record<Quality, string>;
+
+export const BACKGROUND_LABELS = {
+  auto: "自动",
+  opaque: "不透明",
+  transparent: "透明",
+} satisfies Record<Background, string>;
+
+export const MODERATION_LABELS = {
+  auto: "自动",
+  low: "低强度",
+} satisfies Record<Moderation, string>;
 
 export type ImageGenerationSettings = {
   baseUrl: string;
@@ -95,7 +120,7 @@ export function getMimeType(format: OutputFormat) {
 
 export function resolveSize(settings: Pick<ImageGenerationSettings, "sizePreset" | "customWidth" | "customHeight">) {
   if (settings.sizePreset !== "custom") {
-    return settings.sizePreset;
+    return SIZE_PRESET_DETAILS[settings.sizePreset].size;
   }
 
   const result = validateImage2Size(settings.customWidth, settings.customHeight);

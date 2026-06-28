@@ -5,8 +5,10 @@ import {
   Check,
   Copy,
   Download,
+  Eye,
   ImageIcon,
   Loader2,
+  Maximize2,
   Play,
   RefreshCw,
   RotateCcw,
@@ -23,13 +25,17 @@ import { Switch } from "./components/ui/switch";
 import { Textarea } from "./components/ui/textarea";
 import {
   BACKGROUND_OPTIONS,
+  BACKGROUND_LABELS,
   DEFAULT_BASE_URL,
   DEFAULT_MODEL,
   type GeneratedImage,
   type ImageGenerationSettings,
+  MODERATION_LABELS,
   MODERATION_OPTIONS,
   OUTPUT_FORMATS,
+  QUALITY_LABELS,
   QUALITY_OPTIONS,
+  SIZE_PRESET_DETAILS,
   SIZE_PRESETS,
   buildImageRequest,
   parseImageResponse,
@@ -44,7 +50,7 @@ type Settings = ImageGenerationSettings & {
 };
 
 const DEFAULT_PROMPT =
-  "A refined product-style canvas preview of a translucent glass tea cup on a brushed steel table, soft studio light, crisp detail";
+  "一只透明玻璃茶杯放在拉丝金属桌面上，柔和影棚光，产品摄影构图，细节清晰，质感高级";
 
 function createInitialSettings(): Settings {
   const stored = readStoredKey();
@@ -55,7 +61,7 @@ function createInitialSettings(): Settings {
     model: DEFAULT_MODEL,
     prompt: DEFAULT_PROMPT,
     count: 1,
-    sizePreset: "1024x1024",
+    sizePreset: "1k",
     customWidth: 1024,
     customHeight: 1024,
     quality: "auto",
@@ -102,6 +108,7 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const selectedImage = useMemo(
@@ -130,6 +137,21 @@ export default function App() {
     const timeout = window.setTimeout(() => setNotice(""), 1800);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (!previewImage) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPreviewImage(null);
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [previewImage]);
 
   function updateSetting<Key extends keyof Settings>(key: Key, value: Settings[Key]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -184,6 +206,11 @@ export default function App() {
     abortRef.current?.abort();
   }
 
+  function openPreview(image: GeneratedImage) {
+    setSelectedId(image.id);
+    setPreviewImage(image);
+  }
+
   async function handleCopy(image: GeneratedImage) {
     try {
       await copyImage(image);
@@ -200,6 +227,7 @@ export default function App() {
 
   function removeImage(id: string) {
     setImages((current) => current.filter((image) => image.id !== id));
+    setPreviewImage((current) => (current?.id === id ? null : current));
     if (selectedId === id) {
       const nextImage = images.find((image) => image.id !== id);
       setSelectedId(nextImage?.id ?? "");
@@ -318,7 +346,9 @@ export default function App() {
                   >
                     {SIZE_PRESETS.map((option) => (
                       <option key={option} value={option}>
-                        {option === "custom" ? "自定义" : option}
+                        {SIZE_PRESET_DETAILS[option].size
+                          ? `${SIZE_PRESET_DETAILS[option].label} (${SIZE_PRESET_DETAILS[option].size})`
+                          : SIZE_PRESET_DETAILS[option].label}
                       </option>
                     ))}
                   </Select>
@@ -373,7 +403,7 @@ export default function App() {
                   >
                     {QUALITY_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {QUALITY_LABELS[option]}
                       </option>
                     ))}
                   </Select>
@@ -421,7 +451,7 @@ export default function App() {
                   >
                     {BACKGROUND_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {BACKGROUND_LABELS[option]}
                       </option>
                     ))}
                   </Select>
@@ -437,7 +467,7 @@ export default function App() {
                   >
                     {MODERATION_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {MODERATION_LABELS[option]}
                       </option>
                     ))}
                   </Select>
@@ -479,9 +509,13 @@ export default function App() {
               <h2 className="mt-1 text-xl font-semibold">生成结果</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge>{settings.sizePreset === "custom" ? `${settings.customWidth}x${settings.customHeight}` : settings.sizePreset}</Badge>
+              <Badge>
+                {settings.sizePreset === "custom"
+                  ? `${settings.customWidth}x${settings.customHeight}`
+                  : SIZE_PRESET_DETAILS[settings.sizePreset].badge}
+              </Badge>
               <Badge>{settings.outputFormat}</Badge>
-              <Badge>{settings.quality}</Badge>
+              <Badge>{QUALITY_LABELS[settings.quality]}</Badge>
             </div>
           </header>
 
@@ -548,11 +582,22 @@ export default function App() {
                     </div>
                   </div>
                   <div className="grid flex-1 place-items-center p-4">
-                    <img
-                      src={selectedImage.src}
-                      alt={selectedImage.revisedPrompt ?? selectedImage.prompt}
-                      className="max-h-[68vh] max-w-full rounded-sm object-contain shadow-2xl"
-                    />
+                    <button
+                      type="button"
+                      className="group relative max-h-[68vh] max-w-full overflow-hidden rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => openPreview(selectedImage)}
+                      aria-label="预览生成图片"
+                    >
+                      <img
+                        src={selectedImage.src}
+                        alt={selectedImage.revisedPrompt ?? selectedImage.prompt}
+                        className="max-h-[68vh] max-w-full object-contain shadow-2xl"
+                      />
+                      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground opacity-0 shadow transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                        <Maximize2 className="size-3.5" />
+                        预览
+                      </span>
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -591,24 +636,51 @@ export default function App() {
               {images.length ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {images.map((image) => (
-                    <button
-                      type="button"
+                    <div
                       key={image.id}
                       className={cn(
-                        "group overflow-hidden rounded-md border bg-background text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "group overflow-hidden rounded-md border bg-background text-left transition",
                         selectedImage?.id === image.id
                           ? "border-primary shadow-soft"
                           : "border-border hover:border-primary/60",
                       )}
-                      onClick={() => setSelectedId(image.id)}
                     >
-                      <div className="aspect-square bg-canvas">
-                        <img src={image.src} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        className="relative block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => openPreview(image)}
+                        aria-label="预览历史图片"
+                      >
+                        <div className="aspect-square bg-canvas">
+                          <img src={image.src} alt="" className="h-full w-full object-cover" />
+                        </div>
+                        <span className="absolute inset-x-2 bottom-2 inline-flex items-center justify-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground opacity-0 shadow transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                          <Eye className="size-3.5" />
+                          点击预览
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-1 px-2 py-2">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 truncate text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          onClick={() => setSelectedId(image.id)}
+                          title="选中图片"
+                        >
+                          {image.revisedPrompt ?? image.prompt}
+                        </button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          onClick={() => downloadImage(image)}
+                          title="下载历史图片"
+                          aria-label="下载历史图片"
+                        >
+                          <Download className="size-3.5" />
+                        </Button>
                       </div>
-                      <div className="truncate px-2 py-2 text-xs text-muted-foreground">
-                        {image.revisedPrompt ?? image.prompt}
-                      </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -620,6 +692,48 @@ export default function App() {
           </div>
         </section>
       </div>
+
+      {previewImage ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-foreground/75 p-3 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="图片预览"
+        >
+          <div
+            className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-md border border-border bg-background shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <div className="min-w-0 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">图片预览</span>
+                <span className="mx-2">/</span>
+                <span>{formatDate(previewImage.createdAt)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => downloadImage(previewImage)}>
+                  <Download />
+                  下载
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setPreviewImage(null)}>
+                  关闭
+                </Button>
+              </div>
+            </div>
+            <div className="grid min-h-0 flex-1 place-items-center bg-canvas p-3">
+              <img
+                src={previewImage.src}
+                alt={previewImage.revisedPrompt ?? previewImage.prompt}
+                className="max-h-[76vh] max-w-full rounded-sm object-contain shadow-2xl"
+              />
+            </div>
+            <div className="border-t border-border px-3 py-2 text-xs leading-5 text-muted-foreground">
+              {previewImage.revisedPrompt ?? previewImage.prompt}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
