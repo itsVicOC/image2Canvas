@@ -61,7 +61,7 @@ function createInitialSettings(): Settings {
     model: DEFAULT_MODEL,
     prompt: DEFAULT_PROMPT,
     count: 1,
-    sizePreset: "1k",
+    sizePreset: "1k-square",
     customWidth: 1024,
     customHeight: 1024,
     quality: "auto",

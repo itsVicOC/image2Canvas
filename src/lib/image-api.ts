@@ -3,7 +3,15 @@ import { validateImage2Size } from "./size-validation";
 export const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_MODEL = "gpt-image-2";
 
-export const SIZE_PRESETS = ["1k", "2k", "4k", "custom"] as const;
+export const SIZE_PRESETS = [
+  "1k-square",
+  "2k-square",
+  "2k-landscape",
+  "2k-portrait",
+  "4k-landscape",
+  "4k-portrait",
+  "custom",
+] as const;
 export const QUALITY_OPTIONS = ["auto", "low", "medium", "high"] as const;
 export const OUTPUT_FORMATS = ["png", "jpeg", "webp"] as const;
 export const BACKGROUND_OPTIONS = ["auto", "opaque", "transparent"] as const;
@@ -16,9 +24,12 @@ export type Background = (typeof BACKGROUND_OPTIONS)[number];
 export type Moderation = (typeof MODERATION_OPTIONS)[number];
 
 export const SIZE_PRESET_DETAILS = {
-  "1k": { label: "1K", badge: "1K · 1024x1024", size: "1024x1024" },
-  "2k": { label: "2K", badge: "2K · 2048x2048", size: "2048x2048" },
-  "4k": { label: "4K", badge: "4K · 3840x2160", size: "3840x2160" },
+  "1k-square": { label: "1K 方图", badge: "1K 方图 · 1024x1024", size: "1024x1024" },
+  "2k-square": { label: "2K 方图", badge: "2K 方图 · 2048x2048", size: "2048x2048" },
+  "2k-landscape": { label: "2K 横图", badge: "2K 横图 · 2048x1152", size: "2048x1152" },
+  "2k-portrait": { label: "2K 竖图", badge: "2K 竖图 · 1152x2048", size: "1152x2048" },
+  "4k-landscape": { label: "4K 横图", badge: "4K 横图 · 3840x2160", size: "3840x2160" },
+  "4k-portrait": { label: "4K 竖图", badge: "4K 竖图 · 2160x3840", size: "2160x3840" },
   custom: { label: "自定义", badge: "自定义", size: null },
 } satisfies Record<SizePreset, { label: string; badge: string; size: string | null }>;
 

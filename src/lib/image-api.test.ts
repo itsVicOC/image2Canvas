@@ -15,7 +15,7 @@ const baseSettings: ImageGenerationSettings = {
   model: DEFAULT_MODEL,
   prompt: "A ceramic teapot",
   count: 2,
-  sizePreset: "1k",
+  sizePreset: "1k-square",
   customWidth: 1024,
   customHeight: 1024,
   quality: "high",
@@ -68,8 +68,11 @@ describe("buildImageRequest", () => {
   });
 
   it("maps 2k and 4k presets to concrete pixel sizes", () => {
-    expect(buildImageRequest({ ...baseSettings, sizePreset: "2k" }).body.size).toBe("2048x2048");
-    expect(buildImageRequest({ ...baseSettings, sizePreset: "4k" }).body.size).toBe("3840x2160");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-square" }).body.size).toBe("2048x2048");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-landscape" }).body.size).toBe("2048x1152");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-portrait" }).body.size).toBe("1152x2048");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "4k-landscape" }).body.size).toBe("3840x2160");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "4k-portrait" }).body.size).toBe("2160x3840");
   });
 
   it("clamps count and compression to supported ranges", () => {
