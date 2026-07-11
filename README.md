@@ -19,7 +19,7 @@ Live site: [https://itsvicoc.github.io/image2Canvas/](https://itsvicoc.github.io
   - `4K portrait` -> `2160x3840`
   - Custom size with client-side validation.
 - Image result workspace with preview, reuse prompt, copy, download, delete, and history.
-- Session-first API key storage. The key is written to `localStorage` only when the user enables remember mode.
+- Session-first connection storage. The API key and base URL are written to `localStorage` only when the user enables remember mode.
 - Focused unit tests for API request construction, size validation, response parsing, and key persistence behavior.
 
 ## How It Works
@@ -61,8 +61,8 @@ This is a static app. All image generation requests are made directly from the u
 
 - The target API endpoint must allow browser CORS requests.
 - API keys are never committed, bundled, proxied, or sent anywhere except the base URL entered by the user.
-- By default, the key is stored in `sessionStorage` and disappears when the browser session ends.
-- If remember mode is enabled, the key is stored in `localStorage` on that device.
+- By default, the API key and base URL are stored in `sessionStorage` and disappear when the browser session ends.
+- If remember mode is enabled, both values are stored in `localStorage` on that device.
 - For stricter key protection or endpoints that do not support CORS, deploy a separate proxy service and point the app's base URL at that proxy.
 
 ## Custom Size Rules

@@ -41,7 +41,7 @@ import {
   parseImageResponse,
   readImageApiError,
 } from "./lib/image-api";
-import { clearStoredKey, readStoredKey, saveStoredKey } from "./lib/key-storage";
+import { clearStoredConnection, readStoredConnection, saveStoredConnection } from "./lib/key-storage";
 import { validateImage2Size } from "./lib/size-validation";
 import { cn } from "./lib/utils";
 
@@ -53,9 +53,9 @@ const DEFAULT_PROMPT =
   "一只透明玻璃茶杯放在拉丝金属桌面上，柔和影棚光，产品摄影构图，细节清晰，质感高级";
 
 function createInitialSettings(): Settings {
-  const stored = readStoredKey();
+  const stored = readStoredConnection();
   return {
-    baseUrl: DEFAULT_BASE_URL,
+    baseUrl: stored.baseUrl || DEFAULT_BASE_URL,
     apiKey: stored.apiKey,
     rememberKey: stored.remember,
     model: DEFAULT_MODEL,
@@ -123,11 +123,11 @@ export default function App() {
 
   useEffect(() => {
     if (settings.apiKey.trim()) {
-      saveStoredKey(settings.apiKey, settings.rememberKey);
+      saveStoredConnection(settings.apiKey, settings.baseUrl, settings.rememberKey);
     } else {
-      clearStoredKey();
+      clearStoredConnection();
     }
-  }, [settings.apiKey, settings.rememberKey]);
+  }, [settings.apiKey, settings.baseUrl, settings.rememberKey]);
 
   useEffect(() => {
     if (!notice) {
@@ -261,11 +261,11 @@ export default function App() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold">连接</h2>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>记住 key</span>
+                  <span>记住连接</span>
                   <Switch
                     checked={settings.rememberKey}
                     onChange={(event) => updateSetting("rememberKey", event.currentTarget.checked)}
-                    aria-label="记住 API key"
+                    aria-label="记住 API key 和 Base URL"
                   />
                 </div>
               </div>

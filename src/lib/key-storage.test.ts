@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clearStoredKey, readStoredKey, saveStoredKey } from "./key-storage";
+import { clearStoredConnection, readStoredConnection, saveStoredConnection } from "./key-storage";
 
 function memoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -26,27 +26,36 @@ function memoryStorage(): Storage {
   };
 }
 
-describe("key storage", () => {
-  it("stores API keys in session storage by default", () => {
+describe("connection storage", () => {
+  it("stores API keys and base URLs in session storage by default", () => {
     const session = memoryStorage();
     const local = memoryStorage();
-    saveStoredKey("session-key", false, session, local);
-    expect(readStoredKey(session, local)).toEqual({ apiKey: "session-key", remember: false });
+    saveStoredConnection("session-key", "https://session.example/v1", false, session, local);
+    expect(readStoredConnection(session, local)).toEqual({
+      apiKey: "session-key",
+      baseUrl: "https://session.example/v1",
+      remember: false,
+    });
   });
 
-  it("stores API keys in local storage only when remember is enabled", () => {
+  it("stores API keys and base URLs in local storage when remember is enabled", () => {
     const session = memoryStorage();
     const local = memoryStorage();
-    saveStoredKey("local-key", true, session, local);
-    expect(readStoredKey(session, local)).toEqual({ apiKey: "local-key", remember: true });
+    saveStoredConnection("local-key", "https://local.example/v1", true, session, local);
+    expect(readStoredConnection(session, local)).toEqual({
+      apiKey: "local-key",
+      baseUrl: "https://local.example/v1",
+      remember: true,
+    });
     expect(session.getItem("image2Canvas.sessionApiKey")).toBeNull();
+    expect(session.getItem("image2Canvas.sessionBaseUrl")).toBeNull();
   });
 
   it("clears both storage locations", () => {
     const session = memoryStorage();
     const local = memoryStorage();
-    saveStoredKey("local-key", true, session, local);
-    clearStoredKey(session, local);
-    expect(readStoredKey(session, local)).toEqual({ apiKey: "", remember: false });
+    saveStoredConnection("local-key", "https://local.example/v1", true, session, local);
+    clearStoredConnection(session, local);
+    expect(readStoredConnection(session, local)).toEqual({ apiKey: "", baseUrl: "", remember: false });
   });
 });

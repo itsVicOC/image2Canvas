@@ -19,7 +19,7 @@
   - `4K 竖图` -> `2160x3840`
   - `自定义`，并带有前端尺寸校验。
 - 生成结果支持大图预览、复用提示词、复制、下载、删除和历史记录。
-- API key 默认只保存在 `sessionStorage`；只有用户开启“记住 key”后才会写入 `localStorage`。
+- API key 和 Base URL 默认只保存在 `sessionStorage`；用户开启“记住连接”后，两者会一起写入 `localStorage`。
 - 包含请求体构建、尺寸校验、响应解析和 key 存储行为的单元测试。
 
 ## 工作方式
@@ -61,8 +61,8 @@ https://api.openai.com/v1
 
 - 目标 API 必须允许浏览器 CORS 请求。
 - API key 不会被提交到仓库、打包进产物、转发到后端或发送到用户填写 Base URL 以外的位置。
-- 默认情况下，API key 存在 `sessionStorage`，浏览器会话结束后失效。
-- 开启“记住 key”后，API key 会存入当前设备的 `localStorage`。
+- 默认情况下，API key 和 Base URL 存在 `sessionStorage`，浏览器会话结束后失效。
+- 开启“记住连接”后，API key 和 Base URL 会一起存入当前设备的 `localStorage`。
 - 如果需要更严格的密钥保护，或目标接口不支持 CORS，需要另行部署代理服务，并把应用里的 Base URL 指向该代理。
 
 ## 自定义尺寸规则
