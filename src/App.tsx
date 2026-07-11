@@ -3,9 +3,11 @@ import {
   AlertCircle,
   Brush,
   Check,
+  ChevronDown,
   Copy,
   Download,
   Eye,
+  EyeOff,
   ImageIcon,
   Loader2,
   Maximize2,
@@ -15,6 +17,7 @@ import {
   Square,
   Trash2,
   WandSparkles,
+  X,
 } from "lucide-react";
 
 import { Button } from "./components/ui/button";
@@ -36,7 +39,7 @@ import {
   QUALITY_LABELS,
   QUALITY_OPTIONS,
   SIZE_PRESET_DETAILS,
-  SIZE_PRESETS,
+  SIZE_PRESET_GROUPS,
   buildImageRequest,
   parseImageResponse,
   readImageApiError,
@@ -109,6 +112,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const selectedImage = useMemo(
@@ -120,6 +124,8 @@ export default function App() {
     () => validateImage2Size(settings.customWidth, settings.customHeight),
     [settings.customHeight, settings.customWidth],
   );
+
+  const selectedSizeDetails = SIZE_PRESET_DETAILS[settings.sizePreset];
 
   useEffect(() => {
     if (settings.apiKey.trim()) {
@@ -242,8 +248,9 @@ export default function App() {
   return (
     <main className="min-h-screen bg-app text-foreground">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="w-full border-b border-border bg-panel/95 px-4 py-4 backdrop-blur lg:h-screen lg:w-[390px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5">
-          <form className="space-y-5" onSubmit={handleGenerate}>
+        <aside className="w-full border-b border-border bg-panel/95 backdrop-blur lg:h-screen lg:w-[410px] lg:overflow-hidden lg:border-b-0 lg:border-r">
+          <form className="flex min-h-0 flex-col lg:h-full" onSubmit={handleGenerate}>
+            <div className="space-y-5 px-4 py-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5">
             <header className="flex items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
@@ -281,14 +288,26 @@ export default function App() {
               </Field>
 
               <Field label="API key" htmlFor="api-key">
-                <Input
-                  id="api-key"
-                  value={settings.apiKey}
-                  onChange={(event) => updateSetting("apiKey", event.currentTarget.value)}
-                  placeholder="sk-..."
-                  type="password"
-                  spellCheck={false}
-                />
+                <div className="relative">
+                  <Input
+                    id="api-key"
+                    className="pr-10"
+                    value={settings.apiKey}
+                    onChange={(event) => updateSetting("apiKey", event.currentTarget.value)}
+                    placeholder="sk-..."
+                    type={showApiKey ? "text" : "password"}
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1 grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setShowApiKey((current) => !current)}
+                    title={showApiKey ? "隐藏 API key" : "显示 API key"}
+                    aria-label={showApiKey ? "隐藏 API key" : "显示 API key"}
+                  >
+                    {showApiKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </Field>
             </section>
 
@@ -316,43 +335,49 @@ export default function App() {
                 />
               </Field>
 
-              <Field label="提示词" htmlFor="prompt">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="prompt">提示词</Label>
+                  <span className="text-xs tabular-nums text-muted-foreground">{settings.prompt.length} 字</span>
+                </div>
                 <Textarea
                   id="prompt"
                   value={settings.prompt}
                   onChange={(event) => updateSetting("prompt", event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
                   rows={7}
                   placeholder="描述你要生成的图片..."
                 />
+              </div>
+
+              <Field label="尺寸" htmlFor="size">
+                <Select
+                  id="size"
+                  value={settings.sizePreset}
+                  onChange={(event) => updateSetting("sizePreset", event.currentTarget.value as Settings["sizePreset"])}
+                >
+                  {SIZE_PRESET_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map((option) => (
+                        <option key={option} value={option}>
+                          {SIZE_PRESET_DETAILS[option].size && SIZE_PRESET_DETAILS[option].size !== "auto"
+                            ? `${SIZE_PRESET_DETAILS[option].label} (${SIZE_PRESET_DETAILS[option].size})`
+                            : SIZE_PRESET_DETAILS[option].label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </Select>
               </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="数量" htmlFor="count">
-                  <Input
-                    id="count"
-                    min={1}
-                    max={10}
-                    type="number"
-                    value={settings.count}
-                    onChange={(event) => updateSetting("count", Number(event.currentTarget.value))}
-                  />
-                </Field>
-
-                <Field label="尺寸" htmlFor="size">
-                  <Select
-                    id="size"
-                    value={settings.sizePreset}
-                    onChange={(event) => updateSetting("sizePreset", event.currentTarget.value as Settings["sizePreset"])}
-                  >
-                    {SIZE_PRESETS.map((option) => (
-                      <option key={option} value={option}>
-                        {SIZE_PRESET_DETAILS[option].size
-                          ? `${SIZE_PRESET_DETAILS[option].label} (${SIZE_PRESET_DETAILS[option].size})`
-                          : SIZE_PRESET_DETAILS[option].label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+              <div className="flex items-center justify-between gap-3 rounded-md bg-muted/55 px-3 py-2 text-xs">
+                <span className="min-w-0 truncate font-medium text-foreground">{selectedSizeDetails.badge}</span>
+                <span className="shrink-0 text-muted-foreground">{selectedSizeDetails.description}</span>
               </div>
 
               {settings.sizePreset === "custom" ? (
@@ -395,6 +420,20 @@ export default function App() {
               ) : null}
 
               <div className="grid grid-cols-2 gap-3">
+                <Field label="数量" htmlFor="count">
+                  <Input
+                    id="count"
+                    min={1}
+                    max={10}
+                    type="number"
+                    value={settings.count}
+                    onChange={(event) => {
+                      const nextCount = event.currentTarget.valueAsNumber;
+                      updateSetting("count", Number.isFinite(nextCount) ? nextCount : 1);
+                    }}
+                  />
+                </Field>
+
                 <Field label="质量" htmlFor="quality">
                   <Select
                     id="quality"
@@ -408,71 +447,85 @@ export default function App() {
                     ))}
                   </Select>
                 </Field>
-
-                <Field label="格式" htmlFor="format">
-                  <Select
-                    id="format"
-                    value={settings.outputFormat}
-                    onChange={(event) =>
-                      updateSetting("outputFormat", event.currentTarget.value as Settings["outputFormat"])
-                    }
-                  >
-                    {OUTPUT_FORMATS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
               </div>
 
-              {settings.outputFormat !== "png" ? (
-                <Field label={`压缩 ${settings.outputCompression}`} htmlFor="compression">
-                  <input
-                    id="compression"
-                    className="h-2 w-full accent-primary"
-                    min={0}
-                    max={100}
-                    type="range"
-                    value={settings.outputCompression}
-                    onChange={(event) => updateSetting("outputCompression", Number(event.currentTarget.value))}
-                  />
-                </Field>
-              ) : null}
+              <details className="group border-t border-border pt-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-sm text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                  <span>输出与安全</span>
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs font-normal text-muted-foreground">
+                    <span className="truncate">
+                      {settings.outputFormat.toUpperCase()} · {BACKGROUND_LABELS[settings.background]} · {MODERATION_LABELS[settings.moderation]}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0 transition-transform group-open:rotate-180" />
+                  </span>
+                </summary>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="背景" htmlFor="background">
-                  <Select
-                    id="background"
-                    value={settings.background}
-                    onChange={(event) =>
-                      updateSetting("background", event.currentTarget.value as Settings["background"])
-                    }
-                  >
-                    {BACKGROUND_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {BACKGROUND_LABELS[option]}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="格式" htmlFor="format">
+                      <Select
+                        id="format"
+                        value={settings.outputFormat}
+                        onChange={(event) =>
+                          updateSetting("outputFormat", event.currentTarget.value as Settings["outputFormat"])
+                        }
+                      >
+                        {OUTPUT_FORMATS.map((option) => (
+                          <option key={option} value={option}>
+                            {option.toUpperCase()}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
 
-                <Field label="审核" htmlFor="moderation">
-                  <Select
-                    id="moderation"
-                    value={settings.moderation}
-                    onChange={(event) =>
-                      updateSetting("moderation", event.currentTarget.value as Settings["moderation"])
-                    }
-                  >
-                    {MODERATION_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {MODERATION_LABELS[option]}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
+                    <Field label="背景" htmlFor="background">
+                      <Select
+                        id="background"
+                        value={settings.background}
+                        onChange={(event) =>
+                          updateSetting("background", event.currentTarget.value as Settings["background"])
+                        }
+                      >
+                        {BACKGROUND_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {BACKGROUND_LABELS[option]}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <Field label="审核" htmlFor="moderation">
+                    <Select
+                      id="moderation"
+                      value={settings.moderation}
+                      onChange={(event) =>
+                        updateSetting("moderation", event.currentTarget.value as Settings["moderation"])
+                      }
+                    >
+                      {MODERATION_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {MODERATION_LABELS[option]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  {settings.outputFormat !== "png" ? (
+                    <Field label={`压缩质量 ${settings.outputCompression}`} htmlFor="compression">
+                      <input
+                        id="compression"
+                        className="h-2 w-full accent-primary"
+                        min={0}
+                        max={100}
+                        type="range"
+                        value={settings.outputCompression}
+                        onChange={(event) => updateSetting("outputCompression", Number(event.currentTarget.value))}
+                      />
+                    </Field>
+                  ) : null}
+                </div>
+              </details>
             </section>
 
             {error ? (
@@ -485,8 +538,9 @@ export default function App() {
                 {notice}
               </Status>
             ) : null}
+            </div>
 
-            <div className="-mx-4 border-t border-border bg-panel/96 px-4 py-3 backdrop-blur lg:-mx-5 lg:px-5">
+            <div className="border-t border-border bg-panel/96 px-4 py-3 backdrop-blur lg:px-5">
               {isGenerating ? (
                 <Button type="button" className="w-full" variant="destructive" onClick={abortGenerate}>
                   <Square />
@@ -495,7 +549,7 @@ export default function App() {
               ) : (
                 <Button type="submit" className="w-full">
                   <WandSparkles />
-                  生成图片
+                  生成 {Math.min(Math.max(Math.round(settings.count || 1), 1), 10)} 张图片
                 </Button>
               )}
             </div>
@@ -608,7 +662,7 @@ export default function App() {
                     </div>
                     <h3 className="mt-5 text-lg font-semibold">等待第一张图片</h3>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      填写 base URL 和 key，调整参数后即可在这个画布中查看、复制和下载结果。
+                      填写 Base URL 和 API key，调整参数后即可在这个画布中查看、复制和下载结果。
                     </p>
                     <Button
                       type="button"
@@ -716,8 +770,15 @@ export default function App() {
                   <Download />
                   下载
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setPreviewImage(null)}>
-                  关闭
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPreviewImage(null)}
+                  title="关闭预览"
+                  aria-label="关闭预览"
+                >
+                  <X />
                 </Button>
               </div>
             </div>

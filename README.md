@@ -11,7 +11,10 @@ Live site: [https://itsvicoc.github.io/image2Canvas/](https://itsvicoc.github.io
 - Pure frontend React app deployable to GitHub Pages.
 - User-configurable API base URL, API key, model, prompt, count, size, quality, output format, background, and moderation.
 - `gpt-image-2` size presets:
+  - `Auto` -> model-selected dimensions
   - `1K square` -> `1024x1024`
+  - `1K landscape` -> `1536x1024`
+  - `1K portrait` -> `1024x1536`
   - `2K square` -> `2048x2048`
   - `2K landscape` -> `2048x1152`
   - `2K portrait` -> `1152x2048`

@@ -67,7 +67,10 @@ describe("buildImageRequest", () => {
     expect(request.body.output_compression).toBe(72);
   });
 
-  it("maps 2k and 4k presets to concrete pixel sizes", () => {
+  it("maps every size preset to its API value", () => {
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "auto" }).body.size).toBe("auto");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "1k-landscape" }).body.size).toBe("1536x1024");
+    expect(buildImageRequest({ ...baseSettings, sizePreset: "1k-portrait" }).body.size).toBe("1024x1536");
     expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-square" }).body.size).toBe("2048x2048");
     expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-landscape" }).body.size).toBe("2048x1152");
     expect(buildImageRequest({ ...baseSettings, sizePreset: "2k-portrait" }).body.size).toBe("1152x2048");
@@ -84,6 +87,7 @@ describe("buildImageRequest", () => {
     });
     expect(request.body.n).toBe(10);
     expect(request.body.output_compression).toBe(100);
+    expect(buildImageRequest({ ...baseSettings, count: Number.NaN }).body.n).toBe(1);
   });
 });
 

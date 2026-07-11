@@ -4,7 +4,10 @@ export const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_MODEL = "gpt-image-2";
 
 export const SIZE_PRESETS = [
+  "auto",
   "1k-square",
+  "1k-landscape",
+  "1k-portrait",
   "2k-square",
   "2k-landscape",
   "2k-portrait",
@@ -24,14 +27,65 @@ export type Background = (typeof BACKGROUND_OPTIONS)[number];
 export type Moderation = (typeof MODERATION_OPTIONS)[number];
 
 export const SIZE_PRESET_DETAILS = {
-  "1k-square": { label: "1K 方图", badge: "1K 方图 · 1024x1024", size: "1024x1024" },
-  "2k-square": { label: "2K 方图", badge: "2K 方图 · 2048x2048", size: "2048x2048" },
-  "2k-landscape": { label: "2K 横图", badge: "2K 横图 · 2048x1152", size: "2048x1152" },
-  "2k-portrait": { label: "2K 竖图", badge: "2K 竖图 · 1152x2048", size: "1152x2048" },
-  "4k-landscape": { label: "4K 横图", badge: "4K 横图 · 3840x2160", size: "3840x2160" },
-  "4k-portrait": { label: "4K 竖图", badge: "4K 竖图 · 2160x3840", size: "2160x3840" },
-  custom: { label: "自定义", badge: "自定义", size: null },
-} satisfies Record<SizePreset, { label: string; badge: string; size: string | null }>;
+  auto: { label: "自动", badge: "自动尺寸", size: "auto", description: "由模型自动选择" },
+  "1k-square": {
+    label: "1K 方图",
+    badge: "1K 方图 · 1024x1024",
+    size: "1024x1024",
+    description: "1:1 · 1.0 MP",
+  },
+  "1k-landscape": {
+    label: "1K 横图",
+    badge: "1K 横图 · 1536x1024",
+    size: "1536x1024",
+    description: "3:2 · 1.6 MP",
+  },
+  "1k-portrait": {
+    label: "1K 竖图",
+    badge: "1K 竖图 · 1024x1536",
+    size: "1024x1536",
+    description: "2:3 · 1.6 MP",
+  },
+  "2k-square": {
+    label: "2K 方图",
+    badge: "2K 方图 · 2048x2048",
+    size: "2048x2048",
+    description: "1:1 · 4.2 MP",
+  },
+  "2k-landscape": {
+    label: "2K 宽屏",
+    badge: "2K 宽屏 · 2048x1152",
+    size: "2048x1152",
+    description: "16:9 · 2.4 MP",
+  },
+  "2k-portrait": {
+    label: "2K 竖屏",
+    badge: "2K 竖屏 · 1152x2048",
+    size: "1152x2048",
+    description: "9:16 · 2.4 MP",
+  },
+  "4k-landscape": {
+    label: "4K 宽屏",
+    badge: "4K 宽屏 · 3840x2160",
+    size: "3840x2160",
+    description: "16:9 · 8.3 MP",
+  },
+  "4k-portrait": {
+    label: "4K 竖屏",
+    badge: "4K 竖屏 · 2160x3840",
+    size: "2160x3840",
+    description: "9:16 · 8.3 MP",
+  },
+  custom: { label: "自定义", badge: "自定义", size: null, description: "手动输入宽高" },
+} satisfies Record<SizePreset, { label: string; badge: string; size: string | null; description: string }>;
+
+export const SIZE_PRESET_GROUPS = [
+  { label: "智能", options: ["auto"] },
+  { label: "1K", options: ["1k-square", "1k-landscape", "1k-portrait"] },
+  { label: "2K", options: ["2k-square", "2k-landscape", "2k-portrait"] },
+  { label: "4K", options: ["4k-landscape", "4k-portrait"] },
+  { label: "高级", options: ["custom"] },
+] as const satisfies ReadonlyArray<{ label: string; options: ReadonlyArray<SizePreset> }>;
 
 export const QUALITY_LABELS = {
   auto: "自动",
@@ -146,6 +200,7 @@ export function buildImageRequest(settings: ImageGenerationSettings) {
   const prompt = settings.prompt.trim();
   const model = settings.model.trim();
   const apiKey = settings.apiKey.trim();
+  const count = Number.isFinite(settings.count) ? Math.min(Math.max(Math.round(settings.count), 1), 10) : 1;
 
   if (!prompt) {
     throw new Error("请输入提示词。");
@@ -162,7 +217,7 @@ export function buildImageRequest(settings: ImageGenerationSettings) {
   const body: ImageRequestBody = {
     model,
     prompt,
-    n: Math.min(Math.max(Math.round(settings.count), 1), 10),
+    n: count,
     size: resolveSize(settings),
     quality: settings.quality,
     output_format: settings.outputFormat,
